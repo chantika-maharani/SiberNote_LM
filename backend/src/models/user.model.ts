@@ -8,7 +8,7 @@ interface IUser {
 }
 
 const userSchema = new mongoose.Schema<IUser>({
-    email: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
     username: { type: String, required: true },
     password: { type: String, required: true },
     avatarUrl: { type: String },

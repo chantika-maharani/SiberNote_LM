@@ -25,27 +25,49 @@ Semua endpoint mengembalikan JSON dengan struktur berikut:
 }
 ```
 
+**Validation Error `400`**
+```json
+{
+  "status": "failed",
+  "message": "validasi gagal",
+  "errors": [
+    { "field": "password", "message": "password minimal 8 karakter" }
+  ]
+}
+```
+
+---
+
+## Token
+
+| Token           | Expire   | Kegunaan                                      |
+|-----------------|----------|-----------------------------------------------|
+| `accessToken`   | 15 menit | Dikirim di header `Authorization` tiap request |
+| `refreshToken`  | 7 hari   | Dipakai untuk mendapatkan `accessToken` baru  |
+
+Payload JWT: `{ userId: string }`
+
 ---
 
 ## Auth
 
 ### Register
 
-Membuat akun user baru dan mengembalikan JWT token.
+Membuat akun user baru.
 
 ```
 POST /user/register
 ```
 
+**Validasi**
+
+| Field      | Aturan                                                                 |
+|------------|------------------------------------------------------------------------|
+| `email`    | Wajib, format email valid, unik                                        |
+| `username` | Wajib, 1–16 karakter, hanya `a-z A-Z 0-9 _ -`, unik                  |
+| `password` | Wajib, 8–16 karakter, hanya `a-z A-Z 0-9`, tidak boleh mengandung username |
+
 **Request Body**
-
-| Field      | Type   | Required | Keterangan            |
-|------------|--------|----------|-----------------------|
-| `email`    | string | ✅        | Email unik user       |
-| `username` | string | ✅        | Username user         |
-| `password` | string | ✅        | Password plain-text   |
-
-**Contoh Request**
 ```json
 {
   "email": "raffi@example.com",
@@ -60,7 +82,8 @@ POST /user/register
   "status": "success",
   "message": "berhasil buat user",
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
 ```
@@ -69,28 +92,28 @@ POST /user/register
 
 | Status | Kondisi                                    |
 |--------|--------------------------------------------|
-| `401`  | Salah satu field tidak dikirim             |
-| `401`  | Email sudah terdaftar                      |
+| `400`  | Validasi gagal (lihat format validation error di atas) |
+| `401`  | Email atau username sudah terdaftar        |
 | `500`  | Kesalahan server                           |
 
 ---
 
 ### Login
 
-Autentikasi user yang sudah terdaftar dan mengembalikan JWT token.
+Autentikasi user yang sudah terdaftar.
 
 ```
 POST /user/login
 ```
 
+**Validasi**
+
+| Field      | Aturan                        |
+|------------|-------------------------------|
+| `email`    | Wajib, format email valid     |
+| `password` | Wajib, tidak boleh kosong     |
+
 **Request Body**
-
-| Field      | Type   | Required | Keterangan          |
-|------------|--------|----------|---------------------|
-| `email`    | string | ✅        | Email terdaftar     |
-| `password` | string | ✅        | Password plain-text |
-
-**Contoh Request**
 ```json
 {
   "email": "raffi@example.com",
@@ -104,7 +127,8 @@ POST /user/login
   "status": "success",
   "message": "berhasil login",
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
 ```
@@ -113,9 +137,78 @@ POST /user/login
 
 | Status | Kondisi                              |
 |--------|--------------------------------------|
-| `401`  | Salah satu field tidak dikirim       |
+| `400`  | Validasi gagal                       |
 | `401`  | Email atau password salah            |
 | `500`  | Kesalahan server                     |
+
+---
+
+### Refresh Token
+
+Mendapatkan `accessToken` baru menggunakan `refreshToken` yang masih valid.
+
+```
+POST /user/refresh
+```
+
+**Request Body**
+```json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Response `200 OK`**
+```json
+{
+  "status": "success",
+  "message": "access token berhasil diperbarui",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+**Error Responses**
+
+| Status | Kondisi                                              |
+|--------|------------------------------------------------------|
+| `401`  | `refreshToken` tidak dikirim                         |
+| `401`  | `refreshToken` tidak valid, sudah expired, atau sudah logout |
+| `500`  | Kesalahan server                                     |
+
+---
+
+### Logout
+
+Mencabut `refreshToken` — token dihapus dari database sehingga tidak bisa dipakai lagi.
+
+```
+POST /user/logout
+```
+
+**Request Body**
+```json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Response `200 OK`**
+```json
+{
+  "status": "success",
+  "message": "berhasil logout",
+  "data": {}
+}
+```
+
+**Error Responses**
+
+| Status | Kondisi                      |
+|--------|------------------------------|
+| `401`  | `refreshToken` tidak dikirim |
+| `500`  | Kesalahan server             |
 
 ---
 
@@ -123,7 +216,7 @@ POST /user/login
 
 ### Get Current User
 
-Mengambil data user yang sedang login berdasarkan JWT token.
+Mengambil data user yang sedang login. Membutuhkan `accessToken` yang valid.
 
 ```
 GET /user/me
@@ -131,9 +224,9 @@ GET /user/me
 
 **Headers**
 
-| Key             | Value                    | Required |
-|-----------------|--------------------------|----------|
-| `Authorization` | `Bearer <token>`         | ✅        |
+| Key             | Value              | Required |
+|-----------------|--------------------|----------|
+| `Authorization` | `Bearer <accessToken>` | ✅    |
 
 **Contoh Request**
 ```
@@ -163,17 +256,30 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 **Error Responses**
 
-| Status | Kondisi                                         |
-|--------|-------------------------------------------------|
-| `401`  | Token tidak ada, format salah, atau expired     |
-| `404`  | User tidak ditemukan di database                |
-| `500`  | Kesalahan server                                |
+| Status | Kondisi                                             |
+|--------|-----------------------------------------------------|
+| `401`  | Token tidak ada, format salah, atau sudah expired   |
+| `404`  | User tidak ditemukan di database                    |
+| `500`  | Kesalahan server                                    |
 
 ---
 
-## JWT Token
+## Alur Penggunaan Token
 
-- Token dikembalikan saat register dan login
-- Disertakan di setiap request yang butuh autentikasi via header `Authorization: Bearer <token>`
-- Payload: `{ userId: string }`
-- Expire: **1 jam**
+```
+Register / Login
+      │
+      ├── accessToken  (simpan di memory/state, jangan localStorage)
+      └── refreshToken (simpan di httpOnly cookie atau secure storage)
+             │
+             ▼
+      Kirim accessToken di setiap request → Authorization: Bearer <accessToken>
+             │
+             ▼
+      accessToken expired (15 menit)?
+             │
+             └── POST /user/refresh + refreshToken → accessToken baru
+             │
+             ▼
+      Logout? → POST /user/logout + refreshToken → token dicabut dari DB
+```

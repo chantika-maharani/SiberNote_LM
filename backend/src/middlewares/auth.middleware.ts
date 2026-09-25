@@ -1,11 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express"
-import jwt from "jsonwebtoken"
+import jwt, { type JwtPayload } from "jsonwebtoken"
 import envVariable from "../utils/ENV.js"
 import response from "../utils/response.js"
-
-interface JwtPayload {
-    userId: string
-}
 
 export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
     const authHeader = req.headers.authorization
@@ -23,7 +19,13 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
     }
 
     try {
-        const decoded = jwt.verify(token, envVariable.JWT_KEY) as unknown as JwtPayload
+        const decoded = jwt.verify(token, envVariable.JWT_KEY) as JwtPayload
+
+        if (typeof decoded.userId !== "string") {
+            response.userError(res, "token tidak valid")
+            return
+        }
+
         req.userId = decoded.userId
         next()
     } catch (error) {

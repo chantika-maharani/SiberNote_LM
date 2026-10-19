@@ -12,6 +12,9 @@ const envVariable: {
     UPLOAD_BASE_URL: string
     /** Path absolut di server tempat file disimpan, misal: /var/www/sibernote/uploads */
     UPLOADS_DIR: string
+    CLOUDINARY_API_SECRET: string
+    CLOUDINARY_API_KEY: string
+    CLOUDINARY_CLOUD_NAME: string
 } = {
     PORT: Number(process.env.PORT) || 8080,
     MONGO_URL: process.env.MONGO_URL || "",
@@ -20,6 +23,9 @@ const envVariable: {
     GEMINI_EMBEDDING_KEY: process.env.GEMINI_EMBEDDING_KEY || "",
     UPLOAD_BASE_URL: process.env.UPLOAD_BASE_URL || "http://localhost:8080/uploads",
     UPLOADS_DIR: process.env.UPLOADS_DIR || "./uploads",
+    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME||"",
+    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY||"",
+    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET||"",
 }
 
 export default envVariable

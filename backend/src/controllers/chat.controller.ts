@@ -163,6 +163,6 @@ export const getMessages = async (req: Request, res: Response) => {
         )
     } catch (error) {
         console.error("[chat] getMessages error:", error)
-        return response.serverError(res, "gagal dapet riwayat pesan")
+        return response.serverError(res, "Gagal memuat riwayat obrolan, silahkan muat ulang halaman")
     }
 }

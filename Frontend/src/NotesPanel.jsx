@@ -855,12 +855,17 @@ function NoteIcon() {
 
 function PlusIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-         strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M12 5v14M5 12h14" />
-    </svg>
+    <svg width="54" height="35" viewBox="0 0 54 35" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="54" height="35" rx="10" fill="#CECECE"/>
+        <path d="M29 28H19C18.0572 28 17.5858 28 17.2929 27.7071C17 27.4142 17 26.9428 17 26V16C17 12.2288 17 10.3431 18.1716 9.17157C19.3431 8 21.2288 8 25 8H29C32.7712 8 34.6569 8 35.8284 9.17157C37 10.3431 37 12.2288 37 16V20C37 23.7712 37 25.6569 35.8284 26.8284C34.6569 28 32.7712 28 29 28Z" stroke-width="2" stroke="#1A1C1D"/>
+        <path d="M23.25 15.5L30.75 15.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="#1A1C1D"/>
+        <path d="M23.25 20.5H27" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="#1A1C1D"/>
+      </svg>
+
   );
 }
+
+
 
 /**
  * Panel kanan: daftar catatan (State 1) atau editor (State 2), bisa diciutkan.
@@ -909,39 +914,40 @@ export function NotesPanel({ notes: api, collapsed, onToggle, icons }) {
 
         {/* Panel menyusut: tombol tambah + satu ikon per catatan. Klik ikon = buka panel dan catatannya. */}
         {collapsed && (
-          <ul className="panel-rail" aria-label="Daftar catatan">
-            {/* <li>
-              <button
-                type="button"
-                className="rail-add"
-                aria-label="Tambahkan catatan"
-                title="Tambahkan catatan"
-                disabled={creating}
-                onClick={async () => {
-                  // Panel dibuka setelah catatan baru jadi, supaya tidak sempat menampilkan catatan lama.
-                  if (await addNote()) onToggle();
-                }}
+          <div className="collapsed-rail-wrap">
+            {/* 1. Daftar Ikon Catatan (Bisa di-scroll tersendiri jika banyak) */}
+            <ul className="panel-rail" aria-label="Daftar catatan">
+              {sorted.map((n) => (
+                <li key={n._id}>
+                  <button
+                    type="button"
+                    className={`rail-note${n._id === activeId ? " is-active" : ""}`}
+                    aria-label={`Buka catatan ${n.title}`}
+                    title={n.title}
+                    onClick={() => {
+                      onToggle();
+                      setActiveId(n._id);
+                    }}
+                  >
+                    <NoteIcon />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              className="rail-add-bottom"
+              aria-label="Tambahkan catatan"
+              title="Tambahkan catatan"
+              disabled={creating}
+              onClick={async () => {
+                // Panel dibuka setelah catatan baru jadi, supaya tidak sempat menampilkan catatan lama.
+                if (await addNote()) onToggle();
+              }}
               >
-                <PlusIcon />
-              </button>
-            </li> */}
-            {sorted.map((n) => (
-              <li key={n._id}>
-                <button
-                  type="button"
-                  className={`rail-note${n._id === activeId ? " is-active" : ""}`}
-                  aria-label={`Buka catatan ${n.title}`}
-                  title={n.title}
-                  onClick={() => {
-                    onToggle();
-                    setActiveId(n._id);
-                  }}
-                >
-                  <NoteIcon />
-                </button>
-              </li>
-            ))}
-          </ul>
+              <PlusIcon />
+            </button>
+          </div>
         )}
 
         {!collapsed && activeNote && (

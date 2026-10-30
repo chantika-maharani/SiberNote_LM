@@ -9,7 +9,7 @@
   --btn-bg: #d6d6d6;
   --btn-text: #1c1c1c;
   --link: #459DAA;
-  --error: #ff3b3b;
+  --error: #550000;
   --success: #5fd1a0;
   --font: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -183,14 +183,14 @@ body {
   margin: 8px auto 12px;
   padding: 4px 16px;  /* Ketebalan box (atas-bawah & kiri-kanan) */
   border-radius: 10px;
-  background: #FF8E8E;
-  border: 2px solid #ff0000;
+  background: #D57F7F;
+  border: 2px solid #550000;
   border-radius: 10px;
 }
 
 .error-summary p {
   margin: 0;
-  color: #ff0000;
+  color: #550000;
   font-weight: 500;
   font-size: 0.7rem;
   line-height: 1.6;
@@ -515,7 +515,7 @@ body {
 }
 
 .dropdown-menu button.danger {
-  color: var(--error);
+  color: #550000;
 }
 
 .dropdown-menu--fixed {
@@ -1995,6 +1995,21 @@ body {
 /* ----- Panel menyusut: hanya ikon (dipakai panel Sumber dan Catatan) -----
    Kerangkanya (lebar 56px, ikon toggle di tengah) sudah diatur .panel-sources.is-collapsed
    di style utama dan .panel-notes.is-collapsed di atas. */
+.collapsed-rail-wrap {
+  /* display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  padding: 8px 0;
+  box-sizing: border-box; */
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .panel-rail {
   flex: 1;
   min-height: 0;
@@ -2057,6 +2072,39 @@ body {
   color: var(--text);
   cursor: pointer;
   transition: background 0.15s;
+}
+
+.rail-add-bottom {
+  flex-shrink: 0;
+  width: 40px;
+  aspect-ratio: 54 / 35;   /* mengikuti proporsi PlusIcon-mu */
+  margin-top: 12px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.rail-add-bottom svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition: filter 0.15s;
+}
+
+.rail-add-bottom:hover:not(:disabled) svg {
+  filter: brightness(1.15);
+}
+
+.rail-add-bottom:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.rail-add-bottom:disabled {
+  opacity: 0.5;
+  cursor: progress;
 }
 
 .rail-add:hover:not(:disabled) {

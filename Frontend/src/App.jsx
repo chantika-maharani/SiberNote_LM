@@ -505,7 +505,7 @@ function PinIcon() {
 function TrashIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M2.5 4.99984H4.16667M4.16667 4.99984H17.5M4.16667 4.99984V16.6665C4.16667 17.1085 4.34226 17.5325 4.65482 17.845C4.96738 18.1576 5.39131 18.3332 5.83333 18.3332H14.1667C14.6087 18.3332 15.0326 18.1576 15.3452 17.845C15.6577 17.5325 15.8333 17.1085 15.8333 16.6665V4.99984M6.66667 4.99984V3.33317C6.66667 2.89114 6.84226 2.46722 7.15482 2.15466C7.46738 1.8421 7.89131 1.6665 8.33333 1.6665H11.6667C12.1087 1.6665 12.5326 1.8421 12.8452 2.15466C13.1577 2.46722 13.3333 2.89114 13.3333 3.33317V4.99984M8.33333 9.1665V14.1665M11.6667 9.1665V14.1665" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" stroke="#FF0000"/>
+<path d="M2.5 4.99984H4.16667M4.16667 4.99984H17.5M4.16667 4.99984V16.6665C4.16667 17.1085 4.34226 17.5325 4.65482 17.845C4.96738 18.1576 5.39131 18.3332 5.83333 18.3332H14.1667C14.6087 18.3332 15.0326 18.1576 15.3452 17.845C15.6577 17.5325 15.8333 17.1085 15.8333 16.6665V4.99984M6.66667 4.99984V3.33317C6.66667 2.89114 6.84226 2.46722 7.15482 2.15466C7.46738 1.8421 7.89131 1.6665 8.33333 1.6665H11.6667C12.1087 1.6665 12.5326 1.8421 12.8452 2.15466C13.1577 2.46722 13.3333 2.89114 13.3333 3.33317V4.99984M8.33333 9.1665V14.1665M11.6667 9.1665V14.1665" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" stroke="#550000"/>
 </svg>
 
 
@@ -870,6 +870,15 @@ function NotebooksPage({ accessToken, profile, onLogout, onEditProfile, onOpenNo
   const [pinningId, setPinningId] = useState(null);
   // Jumlah sumber per notebook: undefined = masih dimuat, null = gagal dimuat, angka = jumlah dokumen.
   const [sourceCounts, setSourceCounts] = useState({});
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalNotebook: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
 
   // GET /notebooks belum mengembalikan jumlah sumber, jadi dihitung dari
   // GET /documents/:notebookId untuk tiap notebook (paralel). Satu notebook gagal
@@ -884,27 +893,61 @@ function NotebooksPage({ accessToken, profile, onLogout, onEditProfile, onOpenNo
     setSourceCounts((prev) => ({ ...prev, ...counts }));
   }
 
-  async function loadNotebooks() {
-  setLoadingList(true);
-  setListError("");
-  try {
-    const data = await getNotebooks(accessToken);
-    const list = data?.notebooks || [];
-    setNotebooks(list);
-    loadSourceCounts(list);
-  } catch (err) {
-    // Pemicu Toast Notification sesuai requirement TC-DSGN-NOTE-EDGE-13
-    notify("Gagal memuat catatan, silakan coba lagi", "error");
-    setListError(err.message);
-  } finally {
-    setLoadingList(false);
-  }
-}
+  // 1. Perbarui fungsi loadNotebooks agar menerima parameter page & search
+  async function loadNotebooks(currentPage = page, currentSearch = search) {
+    setLoadingList(true);
+    setListError("");
+    try {
+      // Panggil getNotebooks dengan menyertakan page & search (title)
+      const data = await getNotebooks(accessToken, { 
+        page: currentPage, 
+        search: currentSearch 
+      });
+      
+      const list = data?.notebooks || [];
+      setNotebooks(list);
 
+      // Simpan objek pagination dari backend ke state
+      if (data?.pagination) {
+        setPagination(data.pagination);
+      }
+
+      loadSourceCounts(list);
+    } catch (err) {
+      // Pemicu Toast Notification sesuai requirement TC-DSGN-NOTE-EDGE-13
+      notify("Gagal memuat catatan, silakan coba lagi", "error");
+      setListError(err.message);
+    } finally {
+      setLoadingList(false);
+    }
+  }
+
+  // 2. Perbarui useEffect agar memanggil loadNotebooks saat page atau search berubah
   useEffect(() => {
-    loadNotebooks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (accessToken) {
+      loadNotebooks(page, search);
+    }
+  }, [accessToken, page, search]);
+
+    // Handler saat user mengetik kata kunci pencarian
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearch(value);
+    setPage(1); // RESET KE HALAMAN 1 (Memenuhi Requirement)
+  };
+
+  // Handler saat user menekan tombol pagination
+  const handlePrevPage = () => {
+    if (pagination.hasPrevPage) {
+      setPage((prev) => prev - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination.hasNextPage) {
+      setPage((prev) => prev + 1);
+    }
+  };
 
   // Dipanggil setelah pengguna menekan "Hapus" di popup konfirmasi.
   async function handleDelete(notebook) {
@@ -968,8 +1011,9 @@ function NotebooksPage({ accessToken, profile, onLogout, onEditProfile, onOpenNo
     });
 
   const sortLabel = SORT_OPTIONS.find((o) => o.value === sortBy).label;
+  console.log(pagination)
 
-  return (
+    return (
     <>
       <AppHeader onLogout={onLogout} onEditProfile={onEditProfile} profile={profile} />
       <main className="dashboard">
@@ -984,7 +1028,7 @@ function NotebooksPage({ accessToken, profile, onLogout, onEditProfile, onOpenNo
               type="search"
               placeholder="Cari catatan..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
               aria-label="Cari catatan"
             />
           </div>
@@ -993,6 +1037,8 @@ function NotebooksPage({ accessToken, profile, onLogout, onEditProfile, onOpenNo
         <section className="notebooks-panel">
           <div className="notebooks-panel-head">
             <h2>Catatan Saya</h2>
+
+            
 
             <div className="menu-wrap">
               <button
@@ -1026,112 +1072,142 @@ function NotebooksPage({ accessToken, profile, onLogout, onEditProfile, onOpenNo
             </div>
           </div>
 
+          {!loadingList && pagination && pagination.totalNotebook > 0 && (
+              <span className="total-badge">
+                Total: {pagination.totalNotebook} catatan
+              </span>
+            )}
+
           {listError && <ErrorSummary messages={[listError]} />}
 
           {loadingList ? (
             <p className="empty-state">Memuat catatan...</p>
-          ) : visible.length === 0 ? (
+          ) : notebooks.length === 0 ? (
             !listError && (
               <p className="empty-state">
-                {notebooks.length === 0
-                  ? "Belum ada catatan dibuat"
-                  : "Tidak ada catatan yang cocok dengan pencarian."}
+                {/* PERBAIKAN 1: Memisahkan pesan Empty State Pencarian vs Default */}
+                {search.trim() !== ""
+                  ? "Tidak ada catatan yang cocok"
+                  : "Belum ada catatan dibuat"}
               </p>
             )
           ) : (
-            <table className="notebooks-table">
-              <thead>
-                <tr>
-                  <th>Judul</th>
-                  <th>Sumber</th>
-                  <th>Tanggal Dibuat</th>
-                  <th aria-hidden="true"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((nb) => (
-                  // Klik di mana saja pada baris membuka workspace catatan ini.
-                  <tr
-                    key={nb._id}
-                    className="row-clickable"
-                    onClick={() => onOpenNotebook(nb)}
-                  >
-                    <td>
-                      <button type="button" className="row-title">
-                        {truncateTitle(nb.title, 15)}
-                      </button>
-                    </td>
-                    
-                    <td>{formatSourceCount(sourceCounts[nb._id])}</td>
-                    <td>{formatDate(nb.createdAt)}</td>
-                    
-                    {/* stopPropagation: klik menu titik tiga tidak ikut membuka workspace */}
-                    <td className="notebooks-table-actions" onClick={(e) => e.stopPropagation()}>
-                      {/* PEMBUNGKUS BARU: Menjaga pin & titik tiga sejajar ke samping */}
-                      <div className="actions-wrap">
-                        
-                        {/* 1. IKON PIN DITAMBAHKAN DI SINI */}
-                        {nb.isPinned && (
-                          <span
-                            className="pin-badge"
-                            role="img"
-                            aria-label="Disematkan"
-                            title="Disematkan"
-                          >
-                            <PinIcon />
-                          </span>
-                        )}
-
-                        {/* 2. MENU TITIK TIGA */}
-                        <div className="menu-wrap">
-                          <button
-                            type="button"
-                            className="icon-btn"
-                            aria-label={`Opsi untuk ${nb.title}`}
-                            aria-haspopup="menu"
-                            aria-expanded={openMenuId === nb._id}
-                            disabled={deletingId === nb._id || pinningId === nb._id}
-                            onClick={() => setOpenMenuId((id) => (id === nb._id ? null : nb._id))}
-                          >
-                            <Titik3Icon />
-                          </button>
-                          {openMenuId === nb._id && (
-                            <>
-                              <div className="menu-backdrop" onClick={() => setOpenMenuId(null)} />
-                              <div className="dropdown-menu dropdown-menu--right" role="menu">
-                                <button
-                                  type="button"
-                                  role="menuitem"
-                                  onClick={() => { setOpenMenuId(null); setRenameTarget(nb); }}
-                                >
-                                  <PencilIcon /> Ganti Judul
-                                </button>
-                                <button
-                                  type="button"
-                                  role="menuitem"
-                                  onClick={() => { setOpenMenuId(null); handleTogglePin(nb); }}
-                                >
-                                  <PinIcon /> {nb.isPinned ? "Batal sematkan" : "Sematkan"}
-                                </button>
-                                <button
-                                  type="button"
-                                  role="menuitem"
-                                  className="danger"
-                                  onClick={() => { setOpenMenuId(null); setDeleteTarget(nb); }}
-                                >
-                                  <TrashIcon /> Hapus
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-
-                      </div>
-                    </td>
+            <>
+              <table className="notebooks-table">
+                <thead>
+                  <tr>
+                    <th>Judul</th>
+                    <th>Sumber</th>
+                    <th>Tanggal Dibuat</th>
+                    <th aria-hidden="true"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {/* PERBAIKAN 2: Menggunakan data 'notebooks' hasil pagination backend */}
+                  {notebooks.map((nb) => (
+                    <tr
+                      key={nb._id}
+                      className="row-clickable"
+                      onClick={() => onOpenNotebook(nb)}
+                    >
+                      <td>
+                        <button type="button" className="row-title">
+                          {truncateTitle(nb.title, 15)}
+                        </button>
+                      </td>
+                      
+                      <td>{formatSourceCount(sourceCounts[nb._id])}</td>
+                      <td>{formatDate(nb.createdAt)}</td>
+                      
+                      <td className="notebooks-table-actions" onClick={(e) => e.stopPropagation()}>
+                        <div className="actions-wrap">
+                          {nb.isPinned && (
+                            <span
+                              className="pin-badge"
+                              role="img"
+                              aria-label="Disematkan"
+                              title="Disematkan"
+                            >
+                              <PinIcon />
+                            </span>
+                          )}
+
+                          <div className="menu-wrap">
+                            <button
+                              type="button"
+                              className="icon-btn"
+                              aria-label={`Opsi untuk ${nb.title}`}
+                              aria-haspopup="menu"
+                              aria-expanded={openMenuId === nb._id}
+                              disabled={deletingId === nb._id || pinningId === nb._id}
+                              onClick={() => setOpenMenuId((id) => (id === nb._id ? null : nb._id))}
+                            >
+                              <Titik3Icon />
+                            </button>
+                            {openMenuId === nb._id && (
+                              <>
+                                <div className="menu-backdrop" onClick={() => setOpenMenuId(null)} />
+                                <div className="dropdown-menu dropdown-menu--right" role="menu">
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => { setOpenMenuId(null); setRenameTarget(nb); }}
+                                  >
+                                    <PencilIcon /> Ganti Judul
+                                  </button>
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => { setOpenMenuId(null); handleTogglePin(nb); }}
+                                  >
+                                    <PinIcon /> {nb.isPinned ? "Batal sematkan" : "Sematkan"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    className="danger"
+                                    onClick={() => { setOpenMenuId(null); setDeleteTarget(nb); }}
+                                  >
+                                    <TrashIcon /> Hapus
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* PERBAIKAN 3: Komponen Kontrol Pagination Baru */}
+              {pagination && pagination.totalPages > 1 && (
+                <div className="pagination-wrapper">
+                  <button
+                    type="button"
+                    className="pagination-btn"
+                    disabled={!pagination.hasPrevPage}
+                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                  >
+                    &lt; Sebelumnya
+                  </button>
+
+                  <span className="pagination-info">
+                    Halaman {pagination.page} dari {pagination.totalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    className="pagination-btn"
+                    disabled={!pagination.hasNextPage}
+                    onClick={() => setPage((prev) => Math.min(prev + 1, pagination.totalPages))}
+                  >
+                    Berikutnya &gt;
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </section>
       </main>

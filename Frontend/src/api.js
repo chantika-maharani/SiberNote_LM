@@ -61,6 +61,11 @@ function refreshOnce() {
 }
 
 async function request(path, { method = "GET", body, accessToken, isRetry = false } = {}) {
+  // Cek koneksi internet sebelum mengirim request
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    throw new ApiError("Koneksi terputus. Silakan periksa jaringan internet Anda.", 0);
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -80,7 +85,11 @@ async function request(path, { method = "GET", body, accessToken, isRetry = fals
       signal: controller.signal,
     });
   } catch (err) {
-    return " "
+    // FIX: Lempar ApiError saat fetch gagal/offline, JANGAN return " "
+    if (err.name === "AbortError") {
+      throw new ApiError("Waktu permintaan habis (timeout). Coba lagi.", 0);
+    }
+    throw new ApiError("Gagal terhubung ke server. Periksa koneksi internet Anda.", 0);
   } finally {
     clearTimeout(timer);
   }
@@ -155,8 +164,11 @@ export function createNotebook({ title, description }, accessToken) {
   return request("/notebooks", { method: "POST", body: { title, description }, accessToken });
 }
 
-export function getNotebooks(accessToken) {
-  return request("/notebooks", { accessToken });
+export function getNotebooks(accessToken, { page = 1, search = "" } = {}) {
+  const query = new URLSearchParams({ page });
+  if (search.trim()) query.append("title", search.trim());
+  
+  return request(`/notebooks?${query.toString()}`, { accessToken });
 }
 
 export function deleteNotebook(notebookId, accessToken) {

@@ -24,6 +24,7 @@ import {
   fetchDocumentContent,
   getChapters,
   getChapterSummary,
+  generateFlashcards,
 } from "./api";
 import { NotesPanel, useNotes } from "./NotesPanel";
 import ReactMarkdown from "react-markdown";
@@ -2367,6 +2368,34 @@ function WorkspacePage({ notebook, accessToken, profile, onBack, onLogout, onEdi
   const [babTerpilih, setBabTerpilih] = useState(null);
   const [fetchingSummary, setFetchingSummary] = useState(false);
 
+  //State untuk flashcard
+  const [isFlashcardModalOpen, setIsFlashcardModalOpen] = useState(false);
+  const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false);
+  const [activeFlashcards, setActiveFlashcards] = useState(null);
+
+  const handleCreateFlashcard = async (selectedDocIds, numCards) => {
+  // 1. Tutup pop-up dan nyalakan indikator loading
+  setIsFlashcardModalOpen(false);
+  setIsGeneratingFlashcards(true); 
+
+  try {
+    // 2. Tembak API langsung menggunakan fungsi yang sudah dibuat
+    const res = await generateFlashcards(notebook._id, selectedDocIds, numCards, accessToken);
+    
+    // 3. Ambil set flashcard dari response dan simpan ke state
+    const flashcardSet = res.data.flashcardSet;
+    console.log("Flashcard berhasil dibuat/diambil dari cache:", flashcardSet);
+    setActiveFlashcards(flashcardSet);
+    
+    if (notify) notify(res.message, "success");
+
+  } catch (err) {
+    if (notify) notify(err.message, "error");
+  } finally {
+    setIsGeneratingFlashcards(false);
+  }
+};
+
   // Handler saat tag [1] diklik di Chat Message
   function handleTagClick(citation, messageId) {
     setActivePreview({
@@ -2652,6 +2681,17 @@ function WorkspacePage({ notebook, accessToken, profile, onBack, onLogout, onEdi
                         >
                           Pelajari per bab
                         </button>
+                        <button
+                          type="button"
+                          className={`dropup-item ${!hasDocuments ? "disabled-menu-item" : ""}`}
+                          disabled={!hasDocuments}
+                          onClick={() => {
+                            setIsFeatureMenuOpen(false);
+                            if (hasDocuments) setIsFlashcardModalOpen(true);
+                          }}
+                        >
+                          Flashcard
+                        </button>
                       </div>
                       </>
                     )}
@@ -2689,6 +2729,13 @@ function WorkspacePage({ notebook, accessToken, profile, onBack, onLogout, onEdi
             </>
           )}
         </section>
+
+        <CreateFlashcardModal
+          isOpen={isFlashcardModalOpen}
+          onClose={() => setIsFlashcardModalOpen(false)}
+          documents={documents}
+          onCreate={handleCreateFlashcard}
+        />
 
         {/* Panel Kanan: Catatan */}
         <NotesPanel

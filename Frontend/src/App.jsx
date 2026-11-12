@@ -26,6 +26,8 @@ import {
   getChapterSummary,
   generateFlashcards,
 } from "./api";
+import CreateFlashcardModal from './flashcard_modal';
+import FlashcardPlayer from './flashcarduser';
 import { NotesPanel, useNotes } from "./NotesPanel";
 import ReactMarkdown from "react-markdown";
 
@@ -2374,8 +2376,6 @@ function WorkspacePage({ notebook, accessToken, profile, onBack, onLogout, onEdi
   const [activeFlashcards, setActiveFlashcards] = useState(null);
 
   const handleCreateFlashcard = async (selectedDocIds, numCards) => {
-  // 1. Tutup pop-up dan nyalakan indikator loading
-  setIsFlashcardModalOpen(false);
   setIsGeneratingFlashcards(true); 
 
   try {
@@ -2388,9 +2388,10 @@ function WorkspacePage({ notebook, accessToken, profile, onBack, onLogout, onEdi
     setActiveFlashcards(flashcardSet);
     
     if (notify) notify(res.message, "success");
+    setIsFlashcardModalOpen(false);
 
   } catch (err) {
-    if (notify) notify(err.message, "error");
+    if (notify) notify(err.message || "Gagal membuat flashcard, silakan coba lagi.", "error");
   } finally {
     setIsGeneratingFlashcards(false);
   }
@@ -2728,14 +2729,15 @@ function WorkspacePage({ notebook, accessToken, profile, onBack, onLogout, onEdi
                 </form>
             </>
           )}
+          {activeFlashcards && (
+            <FlashcardPlayer
+              flashcardSet={activeFlashcards}
+              onClose={() => setActiveFlashcards(null)} 
+            />
+          )}
         </section>
 
-        <CreateFlashcardModal
-          isOpen={isFlashcardModalOpen}
-          onClose={() => setIsFlashcardModalOpen(false)}
-          documents={documents}
-          onCreate={handleCreateFlashcard}
-        />
+        
 
         {/* Panel Kanan: Catatan */}
         <NotesPanel
@@ -2745,6 +2747,14 @@ function WorkspacePage({ notebook, accessToken, profile, onBack, onLogout, onEdi
           icons={{ toggle: <ToggleSidebarIcon />, rename: <PencilIcon />, trash: <TrashIcon /> }}
         />
       </main>
+
+      <CreateFlashcardModal
+          isOpen={isFlashcardModalOpen}
+          onClose={() => setIsFlashcardModalOpen(false)}
+          documents={documents}
+          onCreate={handleCreateFlashcard}
+          isLoading={isGeneratingFlashcards}
+        />
 
       {/* Dialog & Toast */}
       {createOpen && (

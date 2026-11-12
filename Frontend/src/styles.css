@@ -2680,29 +2680,32 @@ chat-menu-btn:hover {
    MODAL FLASHCARD
    ========================================= */
 .flashcard-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.6);
+  position: fixed ;
+  inset: 0 ;
+  background-color: #1a1c1dBF; /* Latar belakang gelap pelindung layar */
+  z-index: 99999 ; /* Memaksa modal selalu berada paling atas */
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
 }
 
 .flashcard-modal {
-  background-color: #2b2b2b;
-  width: 480px;
-  border-radius: 16px;
+  background-color: #2b2b2b !important; /* Warna solid agar chat di belakangnya TIDAK tembus */
+  width: 100%;
+  border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  color: #e0e0e0;
+  position: relative; 
+  max-width: 620px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .flashcard-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  /* margin-bottom: 24px; */
 }
 
 .flashcard-modal-header h3 {
@@ -2714,33 +2717,35 @@ chat-menu-btn:hover {
 .close-btn {
   background: none;
   border: none;
-  color: #a0a0a0;
   cursor: pointer;
   border-radius: 50%;
   padding: 4px;
-  background-color: rgba(255,255,255,0.05);
 }
 
 .flashcard-controls {
   display: flex;
   gap: 24px;
+  align-items: flex-start;
 }
 
 /* Kiri: Dropdown Jumlah */
 .dropdown-section {
+  flex: 0 0 150px;
   position: relative;
-  width: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .dropdown-section label, .source-section label {
-  display: block;
+  /* display: block; */
   font-size: 0.8rem;
   color: #a0a0a0;
-  margin-bottom: 12px;
+  /* margin-bottom: 12px; */
 }
 
 .custom-select {
-  background-color: #1e1e1e;
+  /* background-color: #1e1e1e;
   border: 1px solid #444;
   border-radius: 8px;
   padding: 8px 12px;
@@ -2748,16 +2753,26 @@ chat-menu-btn:hover {
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 0.95rem; */
+  background-color: #1e1e1e;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
 }
 
 .custom-options {
   position: absolute;
-  top: calc(100% + 4px);
+  top: 100%;
   left: 0;
-  width: 100%;
+  right: 0;
+  margin-top: 4px;
   background-color: #1e1e1e;
-  border: 1px solid #444;
+  
   border-radius: 8px;
   overflow: hidden;
   z-index: 10;
@@ -2863,4 +2878,167 @@ chat-menu-btn:hover {
 .disabled-menu-item {
   color: #555555 !important;
   cursor: not-allowed !important;
+}
+
+.flashcard-loading-state {
+  display: flex;
+  flex-direction: row; /* 👈 FIX: Ubah menjadi row agar sejajar menyamping */
+  align-items: center;
+  justify-content: center;
+  gap: 16px; /* Jarak antara spinner dan teks */
+  min-height: 250px;
+  font-size: 1.5rem; /* Sedikit diperbesar agar seimbang dengan SVG 54x54 milikmu */
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+/* =========================================
+   FLASHCARD PLAYER (UI PEMUTAR KARTU)
+   ========================================= */
+.flashcard-player-overlay {
+  position: absolute; /* Menutupi area Chat AI */
+  inset: 0;
+  background-color: #1a1a1aBF; /* Warna latar belakang gelap panel chat */
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flashcard-player-modal {
+  background-color: #2b2b2b;
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 650px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Header */
+.player-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #e0e0e0;
+}
+
+.player-modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.close-player-btn {
+  background-color: #2b2b2b;
+  border: none;
+  color: #e0e0e0;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.close-player-btn:hover {
+  background-color: #4a4a4a;
+}
+
+/* --- ANIMASI FLIP 3D KARTU --- */
+.flashcard-scene {
+  width: 100%;
+  height: 320px;
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.flashcard-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.flashcard-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flashcard-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background-color: #1a1c1d;
+  border: 1px solid #635252;
+}
+
+.flashcard-back {
+  transform: rotateY(180deg);
+  background-color: #1e1e1e; /* Bisa dibedakan sedikit jika ingin variasi */
+}
+
+.flashcard-text {
+  font-size: 1.25rem;
+  color: #ffffff;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Teks Sumber di sisi belakang */
+.flashcard-source {
+  position: absolute;
+  bottom: 24px;
+  font-size: 0.9rem;
+  color: #a0a0a0;
+  margin-top: 16px;
+}
+
+/* Footer: Navigasi */
+.player-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 32px;
+}
+
+.card-counter {
+  font-size: 1.1rem;
+  color: #e0e0e0;
+}
+
+.nav-btn {
+  background-color: #cccccc;
+  color: #1a1a1a;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background-color: #e0e0e0;
+}
+
+/* State disabled untuk tombol panah saat mencapai batas kartu pertama/terakhir */
+.nav-btn:disabled {
+  color: #8A8A8A;
+  cursor: not-allowed;
+  opacity: 0.6;
 }

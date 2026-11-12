@@ -196,6 +196,9 @@ export const updateUserPassword = async(req: Request, res: Response)=>{
         if(!user){
             return response.notFoundError(res,"user tidak ditemukan")
         }
+        if (user.username === newPassword) {
+            return response.notFoundError(res,"password tidak boleh sama dengan username")
+        }
         const isOldPasswordMatch =await verifyPassword(oldPassword,user.password)
         if(!isOldPasswordMatch){
             return response.userError(res,"Password lama salah",400)

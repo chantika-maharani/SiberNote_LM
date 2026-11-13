@@ -2675,3 +2675,479 @@ chat-menu-btn:hover {
     opacity: 0.5;
   }
 }
+
+/* =========================================
+   MODAL FLASHCARD
+   ========================================= */
+.flashcard-modal-overlay {
+  position: fixed ;
+  inset: 0 ;
+  background-color: #1a1c1dBF; /* Latar belakang gelap pelindung layar */
+  z-index: 99999 ; /* Memaksa modal selalu berada paling atas */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flashcard-modal {
+  background-color: #2b2b2b !important; /* Warna solid agar chat di belakangnya TIDAK tembus */
+  width: 100%;
+  border-radius: 12px;
+  padding: 24px;
+  position: relative; 
+  max-width: 620px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.flashcard-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* margin-bottom: 24px; */
+}
+
+.flashcard-modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 50%;
+  padding: 4px;
+}
+
+.flashcard-controls {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+/* Kiri: Dropdown Jumlah */
+.dropdown-section {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  border-radius: 8px;
+}
+
+.dropdown-section label, .source-section label {
+  /* display: block; */
+  font-size: 0.8rem;
+  color: #a0a0a0;
+  /* margin-bottom: 12px; */
+}
+
+.custom-select {
+  /* background-color: #1e1e1e;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.95rem; */
+  background-color:transparent;
+  border: 1px solid #635252;
+  border-radius: 8px;
+  padding: 2px 9px;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  gap: 15px;
+}
+
+.custom-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background-color: #2b2b2b;
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 10;
+  box-shadow: 3px 3px 0px 0px #1a1c1d;
+}
+
+.custom-option {
+  padding: 5px 21px;
+  cursor: pointer;
+}
+
+.custom-option:hover:not(.disabled) {
+  background-color: #333;
+}
+
+.custom-option.disabled {
+  color: #8a8a8a;
+  cursor: not-allowed;
+}
+
+/* Kanan: Daftar Sumber */
+.source-section {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.source-list-flash {
+  border: 2px solid #635252;
+  border-radius: 10px;
+  padding: 8px;
+  max-height: 300px;
+  overflow-y: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.source-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.source-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.source-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* .source-item-left .file-icon{
+  width: 36px;
+  height: 36px;
+} */
+
+.source-title {
+  font-size: 0.8rem;
+  color: #cecece;
+}
+
+.error-text {
+  display: block;
+  color: #B81B1B;
+  font-size: 0.8rem;
+  margin-top: 8px;
+}
+
+/* Footer & Tombol Buat */
+.flashcard-modal-footer {
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.btn-create-flashcard {
+  padding-top: 0;
+  width: 100%;
+  padding: 2px;
+  border-radius: 10px;
+  border: none;
+  background-color: #e0e0e0;
+  color: #1a1a1a;
+  font-size: 24px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-create-flashcard:disabled {
+  background-color: #555555;
+  color: #888888;
+  cursor: not-allowed;
+}
+
+/* Status disabled untuk item menu */
+.disabled-menu-item {
+  color: #555555 !important;
+  cursor: not-allowed !important;
+}
+
+.flashcard-loading-state {
+  display: flex;
+  flex-direction: row; /* 👈 FIX: Ubah menjadi row agar sejajar menyamping */
+  align-items: center;
+  justify-content: center;
+  gap: 16px; /* Jarak antara spinner dan teks */
+  min-height: 250px;
+  font-size: 1.5rem; /* Sedikit diperbesar agar seimbang dengan SVG 54x54 milikmu */
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+/* =========================================
+   FLASHCARD PLAYER (UI PEMUTAR KARTU)
+   ========================================= */
+.flashcard-player-overlay {
+  position: absolute; /* Menutupi area Chat AI */
+  inset: 0;
+  background-color: #1a1a1aBF; /* Warna latar belakang gelap panel chat */
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flashcard-player-modal {
+  background-color: #2b2b2b;
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 650px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Header */
+.player-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #e0e0e0;
+}
+
+.player-modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.close-player-btn {
+  background-color: #2b2b2b;
+  border: none;
+  color: #e0e0e0;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.close-player-btn:hover {
+  background-color: #4a4a4a;
+}
+
+/* --- ANIMASI FLIP 3D KARTU --- */
+.flashcard-scene {
+  width: 100%;
+  height: 320px;
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.flashcard-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.flashcard-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flashcard-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background-color: #1a1c1d;
+  border: 1px solid #635252;
+}
+
+.flashcard-back {
+  transform: rotateY(180deg);
+  background-color: #1e1e1e; /* Bisa dibedakan sedikit jika ingin variasi */
+}
+
+.flashcard-text {
+  font-size: 1.25rem;
+  color: #ffffff;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Teks Sumber di sisi belakang */
+.flashcard-source {
+  position: absolute;
+  bottom: 24px;
+  font-size: 0.9rem;
+  color: #a0a0a0;
+  margin-top: 16px;
+}
+
+/* Footer: Navigasi */
+.player-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 32px;
+}
+
+.card-counter {
+  font-size: 1.1rem;
+  color: #e0e0e0;
+}
+
+.nav-btn {
+  background-color: #cccccc;
+  color: #1a1a1a;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background-color: #e0e0e0;
+}
+
+/* State disabled untuk tombol panah saat mencapai batas kartu pertama/terakhir */
+.nav-btn:disabled {
+  color: #8A8A8A;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* =========================================
+   CUSTOM CHECKBOX (Sesuai Figma)
+   ========================================= */
+
+/* Kontainer pembungkus checkbox (12x12 mengikuti Rectangle 127) */
+.custom-checkbox-container {
+  position: relative;
+  width: 12px; 
+  height: 12px;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Sembunyikan checkbox bawaan React/Browser secara visual */
+.native-hidden-checkbox {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+/* Kotak buatan (Rectangle 127) */
+.styled-checkbox {
+  position: absolute;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  background-color: transparent; 
+  border: 2px solid #635252;
+  border-radius: 2px;
+  box-sizing: border-box;
+  transition: all 0.15s ease-in-out;
+}
+
+/* State: Saat dicentang (Tampil background #CECECE) */
+.native-hidden-checkbox:checked ~ .styled-checkbox {
+  background: #CECECE;
+}
+
+/* Membuat ikon centang (Menyesuaikan ruang Check 8x8px) */
+.styled-checkbox::after {
+  content: "";
+  position: absolute;
+  display: none;
+  /* Posisi disesuaikan agar pas di tengah kotak 12x12 */
+  top: 1.5px;
+  left: 3.5px;
+  width: 3px; 
+  height: 6px; 
+  border: solid #1a1a1a; /* Warna centang hitam gelap */
+  border-width: 0 1.5px 1.5px 0; /* Ketebalan garis centang yang lebih proporsional */
+  transform: rotate(45deg);
+}
+
+/* Munculkan ikon centang HANYA ketika checkbox dicentang */
+.native-hidden-checkbox:checked ~ .styled-checkbox::after {
+  display: block;
+}
+
+/* Container untuk menahan posisi absolut ikon pensil */
+.profile-avatar-wrapper {
+  position: relative;
+  display: inline-block;
+  /* Menambahkan border putih/abu terang di sekeliling avatar seperti pada desain */
+  border-radius: 50%;
+  border: 2px solid #e0e0e0; 
+}
+
+/* Badge ikon pensil di pojok kanan bawah */
+.edit-avatar-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 26px;
+  height: 26px;
+  background-color: #2b2b2b; /* Warna latar belakang gelap */
+  color: #e0e0e0;
+  border: 1px solid #1a1a1a;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  padding: 0;
+  transition: background-color 0.2s;
+}
+
+.edit-avatar-badge:hover {
+  background-color: #3f3f3f;
+}
+
+.edit-avatar-badge:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Memastikan Avatar tidak memiliki border atau margin bawaan yang merusak lingkaran */
+.profile-avatar-img {
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+}

@@ -379,7 +379,7 @@ export async function getChapterSummary(notebookId, chapter, token) {
 }
 
 export async function generateFlashcards(notebookId, documentIds, count, token) {
-  const response = await fetch(`http://localhost:5000/api/notebooks/${notebookId}/flashcards`, {
+  const response = await fetch(`${BASE_URL}/notebooks/${notebookId}/flashcards`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -397,8 +397,24 @@ export async function generateFlashcards(notebookId, documentIds, count, token) 
   if (!response.ok) {
     throw new Error(result.message || "Gagal membuat flashcard");
   }
-  
-  return result;
+
+  const flashcardSet =
+    result?.data?.flashcardSet ??
+    result?.flashcardSet ??
+    (Array.isArray(result?.data?.cards) ? result.data : null) ??
+    (Array.isArray(result?.cards) ? result : null);
+
+  if (!flashcardSet || !Array.isArray(flashcardSet.cards) || flashcardSet.cards.length === 0) {
+    throw new Error(result.message || "Respons server tidak berisi soal flashcard.");
+  }
+
+  return {
+    ...result,
+    data: {
+      ...(result.data || {}),
+      flashcardSet,
+    },
+  };
 }
 
 /**

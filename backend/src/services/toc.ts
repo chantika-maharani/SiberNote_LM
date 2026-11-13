@@ -32,31 +32,55 @@ const MAX_CHUNKS = 300
 
 const buildTocPrompt = (
     docs: TocDocument[],
-    chunksByDoc: Map<string, { pageStart: number; pageEnd: number; content: string }[]>,
+    chunksByDoc: Map<string, { pageStart: number; pageEnd: number; content: string; chunkIndex?: number }[]>,
 ): string => {
     const isMultiDoc = docs.length > 1
 
     const docBlocks = docs.map((doc, i) => {
         const chunks = chunksByDoc.get(doc.documentId.toString()) ?? []
+
+        // Deteksi apakah dokumen ini adalah DOCX/TXT (semua chunk di halaman 1)
+        const isDocxLike = doc.totalPages === 1 && chunks.every((c) => c.pageStart === 1 && c.pageEnd === 1)
+
         const header = isMultiDoc
             ? `DOKUMEN ${i + 1}: ${doc.documentTitle} (${doc.totalPages} halaman)`
             : `Dokumen: ${doc.documentTitle} (${doc.totalPages} halaman)`
 
-        const chunkLines = chunks.map(
-            (c) => `[Halaman ${c.pageStart}–${c.pageEnd}]\n"${c.content.slice(0, 400)}"`,
-        )
+        const chunkLines = isDocxLike
+            ? chunks.map((c, idx) => {
+                  const pos = idx + 1
+                  const totalChunks = chunks.length
+                  // Kalau hanya 1 chunk, kirim konten penuh — tidak ada alasan truncate
+                  // Kalau multi-chunk, batasi 800 karakter per chunk agar tidak overload token
+                  const preview = totalChunks === 1 ? c.content : c.content.slice(0, 800)
+                  return `[Bagian ${pos}/${totalChunks}]\n"${preview}"`
+              })
+            : chunks.map(
+                  (c) => `[Halaman ${c.pageStart}–${c.pageEnd}]\n"${c.content.slice(0, 400)}"`,
+              )
 
         return [header, "", ...chunkLines].join("\n")
     })
 
     const sourceBlock = docBlocks.join("\n\n---\n\n")
 
+    // Deteksi apakah semua dokumen adalah DOCX-like (tidak punya info halaman)
+    const allDocxLike = docs.every((doc) => {
+        const chunks = chunksByDoc.get(doc.documentId.toString()) ?? []
+        return doc.totalPages === 1 && chunks.every((c) => c.pageStart === 1 && c.pageEnd === 1)
+    })
+
     const returnExample = isMultiDoc
         ? `[
-  { "chapterNumber": 1, "title": "Pendahuluan", "pageStart": 1, "pageEnd": 10, "documentTitle": "${docs[0]?.documentTitle ?? "Dokumen.pdf"}" },
-  { "chapterNumber": 1, "title": "Pengenalan Jaringan", "pageStart": 1, "pageEnd": 15, "documentTitle": "${docs[1]?.documentTitle ?? "Dokumen2.pdf"}" }
+  { "chapterNumber": 1, "title": "Pendahuluan", "pageStart": 1, "pageEnd": 1, "documentTitle": "${docs[0]?.documentTitle ?? "Dokumen.pdf"}" },
+  { "chapterNumber": 1, "title": "Pengenalan Jaringan", "pageStart": 1, "pageEnd": 1, "documentTitle": "${docs[1]?.documentTitle ?? "Dokumen2.pdf"}" }
 ]`
-        : `[
+        : allDocxLike
+          ? `[
+  { "chapterNumber": 1, "title": "Pendahuluan", "pageStart": 1, "pageEnd": 1 },
+  { "chapterNumber": 2, "title": "Analisis Kebutuhan", "pageStart": 1, "pageEnd": 1 }
+]`
+          : `[
   { "chapterNumber": 1, "title": "Pendahuluan", "pageStart": 1, "pageEnd": 10 },
   { "chapterNumber": 2, "title": "Normalisasi", "pageStart": 11, "pageEnd": 30 }
 ]`
@@ -65,6 +89,10 @@ const buildTocPrompt = (
         ? "Susun daftar bab dari semua dokumen di atas. Sertakan nama dokumen asal untuk setiap bab."
         : "Susun daftar bab dari dokumen di atas."
 
+    const pageNote = allDocxLike
+        ? "- Dokumen ini tidak memiliki nomor halaman fisik (format DOCX/TXT). Gunakan pageStart: 1 dan pageEnd: 1 untuk semua bab."
+        : "- Jika dokumen memiliki halaman daftar isi, gunakan informasi dari sana."
+
     return [
         sourceBlock,
         "",
@@ -72,8 +100,9 @@ const buildTocPrompt = (
         docInstruction,
         "",
         "Aturan:",
-        "- Jika dokumen memiliki halaman daftar isi, gunakan informasi dari sana.",
-        "- Jika tidak ada halaman daftar isi, identifikasi bab berdasarkan struktur dan isi dokumen.",
+        pageNote,
+        "- Identifikasi SEMUA bab utama yang ada dalam dokumen berdasarkan judul, heading, atau struktur konten.",
+        "- Jangan melewatkan bab manapun — pastikan seluruh bab dari awal hingga akhir dokumen tercakup.",
         "- Gunakan Bahasa Indonesia untuk judul bab.",
         isMultiDoc ? `- Sertakan field "documentTitle" dengan NAMA FILE ASLI dokumen (contoh: "${docs[0]?.documentTitle ?? "NamaFile.pdf"}"), BUKAN label "DOKUMEN 1" atau "DOKUMEN 2".` : "",
         "",
@@ -88,39 +117,47 @@ const buildTocPrompt = (
 
 const fetchChunksForDocs = async (
     docs: TocDocument[],
-): Promise<Map<string, { pageStart: number; pageEnd: number; content: string }[]>> => {
+): Promise<Map<string, { pageStart: number; pageEnd: number; content: string; chunkIndex: number }[]>> => {
     const perDocLimit = Math.max(1, Math.floor(MAX_CHUNKS / docs.length))
-    const map = new Map<string, { pageStart: number; pageEnd: number; content: string }[]>()
+    const map = new Map<string, { pageStart: number; pageEnd: number; content: string; chunkIndex: number }[]>()
 
     for (const doc of docs) {
         const total = await Chunk.countDocuments({ documentId: doc.documentId })
 
-        let chunks: { pageStart: number; pageEnd: number; content: string }[]
+        // Deteksi apakah DOCX/TXT: cek apakah totalPages == 1
+        // Untuk DOCX, kita kirim SEMUA chunk karena semua berada di "halaman 1"
+        // — strategi front/tail tidak berlaku karena tidak ada posisi halaman bermakna
+        const isDocxLike = doc.totalPages === 1
 
-        if (total <= perDocLimit) {
+        let chunks: { pageStart: number; pageEnd: number; content: string; chunkIndex: number }[]
+
+        if (isDocxLike || total <= perDocLimit) {
+            // Untuk DOCX: ambil semua, dibatasi MAX_CHUNKS total
+            const limit = isDocxLike ? MAX_CHUNKS : total
             chunks = await Chunk.find({ documentId: doc.documentId })
-                .select("pageStart pageEnd content")
+                .select("pageStart pageEnd content chunkIndex")
                 .sort({ chunkIndex: 1 })
+                .limit(limit)
                 .lean()
         } else {
-            // ambil chunk awal lebih banyak — daftar isi biasanya di awal dokumen
+            // PDF: ambil chunk awal lebih banyak — daftar isi biasanya di awal dokumen
             // 70% dari slot untuk awal, 30% untuk sisa dokumen
             const frontSlots = Math.ceil(perDocLimit * 0.7)
             const tailSlots = perDocLimit - frontSlots
 
             const frontChunks = await Chunk.find({ documentId: doc.documentId })
-                .select("pageStart pageEnd content")
+                .select("pageStart pageEnd content chunkIndex")
                 .sort({ chunkIndex: 1 })
                 .limit(frontSlots)
                 .lean()
 
             const tailChunks = await Chunk.find({ documentId: doc.documentId })
-                .select("pageStart pageEnd content")
+                .select("pageStart pageEnd content chunkIndex")
                 .sort({ chunkIndex: -1 })
                 .limit(tailSlots)
                 .lean()
 
-            // gabung dan sort ascending
+            // gabung, deduplikasi per halaman, sort ascending
             const combined = [...frontChunks, ...tailChunks]
             const unique = combined.filter(
                 (c, i, arr) =>
@@ -260,7 +297,7 @@ const generateContentWithRetry = async (
  */
 export const generateToc = async (docs: TocDocument[]): Promise<ParsedChapter[]> => {
     const chunksByDoc = await fetchChunksForDocs(docs)
-    const prompt = buildTocPrompt(docs, chunksByDoc)
+    const prompt = buildTocPrompt(docs, chunksByDoc as Map<string, { pageStart: number; pageEnd: number; content: string; chunkIndex?: number }[]>)
 
     const raw = await generateContentWithRetry(prompt)
     return parseAndValidate(raw, docs)

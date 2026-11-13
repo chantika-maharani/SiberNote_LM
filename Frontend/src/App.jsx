@@ -24,7 +24,11 @@ import {
   fetchDocumentContent,
   getChapters,
   getChapterSummary,
+  generateFlashcards,
+  updatePassword,
 } from "./api";
+import CreateFlashcardModal from './flashcard_modal';
+import FlashcardPlayer from './flashcarduser';
 import { NotesPanel, useNotes } from "./NotesPanel";
 import ReactMarkdown from "react-markdown";
 
@@ -1589,13 +1593,13 @@ function FileIcon({ type = "" }) {
           <path
             d="M10 30V90H70"
             stroke="#E53935"
-            strokeWidth="8"
+            strokeWidth="4"
             strokeLinecap="square"
           />
           <path
             d="M30 10H90V70"
             stroke="#E53935"
-            strokeWidth="8"
+            strokeWidth="4"
             strokeLinecap="square"
           />
           {/* Teks PDF */}
@@ -1604,8 +1608,8 @@ function FileIcon({ type = "" }) {
             y="57"
             textAnchor="middle"
             fill="#E53935"
-            fontSize="26"
-            fontWeight="800"
+            fontSize="24"
+            fontWeight="600"
             fontFamily="sans-serif"
           >
             PDF
@@ -1628,7 +1632,7 @@ function FileIcon({ type = "" }) {
           <path
             d="M15 10H68L85 27V90H15V10Z"
             stroke="#2B579A"
-            strokeWidth="8"
+            strokeWidth="4"
             strokeLinejoin="round"
           />
           {/* Teks DOCX */}
@@ -1637,8 +1641,8 @@ function FileIcon({ type = "" }) {
             y="58"
             textAnchor="middle"
             fill="#2B579A"
-            fontSize="21"
-            fontWeight="800"
+            fontSize="19"
+            fontWeight="600"
             fontFamily="sans-serif"
           >
             DOCX
@@ -1664,13 +1668,13 @@ function FileIcon({ type = "" }) {
             width="76"
             height="56"
             stroke="#E06B43"
-            strokeWidth="8"
+            strokeWidth="4"
             fill="none"
           />
           <path
             d="M50 68V80M28 88H72"
             stroke="#E06B43"
-            strokeWidth="8"
+            strokeWidth="4"
             strokeLinecap="square"
           />
           {/* Teks PPTX */}
@@ -1679,8 +1683,8 @@ function FileIcon({ type = "" }) {
             y="49"
             textAnchor="middle"
             fill="#E06B43"
-            fontSize="21"
-            fontWeight="800"
+            fontSize="19"
+            fontWeight="600"
             fontFamily="sans-serif"
           >
             PPTX
@@ -1706,7 +1710,7 @@ function FileIcon({ type = "" }) {
             width="76"
             height="76"
             stroke="currentColor"
-            strokeWidth="8"
+            strokeWidth="4"
             fill="none"
           />
           <line
@@ -1731,8 +1735,8 @@ function FileIcon({ type = "" }) {
             y="57"
             textAnchor="middle"
             fill="currentColor"
-            fontSize="24"
-            fontWeight="800"
+            fontSize="22"
+            fontWeight="600"
             fontFamily="sans-serif"
           >
             TXT
@@ -2367,6 +2371,33 @@ function WorkspacePage({ notebook, accessToken, profile, onBack, onLogout, onEdi
   const [babTerpilih, setBabTerpilih] = useState(null);
   const [fetchingSummary, setFetchingSummary] = useState(false);
 
+  //State untuk flashcard
+  const [isFlashcardModalOpen, setIsFlashcardModalOpen] = useState(false);
+  const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false);
+  const [activeFlashcards, setActiveFlashcards] = useState(null);
+
+  const handleCreateFlashcard = async (selectedDocIds, numCards) => {
+  setIsGeneratingFlashcards(true); 
+
+  try {
+    // 2. Tembak API langsung menggunakan fungsi yang sudah dibuat
+    const res = await generateFlashcards(notebook._id, selectedDocIds, numCards, accessToken);
+    
+    // 3. Ambil set flashcard dari response dan simpan ke state
+    const flashcardSet = res.data.flashcardSet;
+    console.log("Flashcard berhasil dibuat/diambil dari cache:", flashcardSet);
+    setActiveFlashcards(flashcardSet);
+    
+    if (notify) notify(res.message, "success");
+    setIsFlashcardModalOpen(false);
+
+  } catch (err) {
+    if (notify) notify(err.message || "Gagal membuat flashcard, silakan coba lagi.", "error");
+  } finally {
+    setIsGeneratingFlashcards(false);
+  }
+};
+
   // Handler saat tag [1] diklik di Chat Message
   function handleTagClick(citation, messageId) {
     setActivePreview({
@@ -2652,6 +2683,17 @@ function WorkspacePage({ notebook, accessToken, profile, onBack, onLogout, onEdi
                         >
                           Pelajari per bab
                         </button>
+                        <button
+                          type="button"
+                          className={`dropup-item ${!hasDocuments ? "disabled-menu-item" : ""}`}
+                          disabled={!hasDocuments}
+                          onClick={() => {
+                            setIsFeatureMenuOpen(false);
+                            if (hasDocuments) setIsFlashcardModalOpen(true);
+                          }}
+                        >
+                          Flashcard
+                        </button>
                       </div>
                       </>
                     )}
@@ -2688,7 +2730,15 @@ function WorkspacePage({ notebook, accessToken, profile, onBack, onLogout, onEdi
                 </form>
             </>
           )}
+          {activeFlashcards && (
+            <FlashcardPlayer
+              flashcardSet={activeFlashcards}
+              onClose={() => setActiveFlashcards(null)} 
+            />
+          )}
         </section>
+
+        
 
         {/* Panel Kanan: Catatan */}
         <NotesPanel
@@ -2698,6 +2748,14 @@ function WorkspacePage({ notebook, accessToken, profile, onBack, onLogout, onEdi
           icons={{ toggle: <ToggleSidebarIcon />, rename: <PencilIcon />, trash: <TrashIcon /> }}
         />
       </main>
+
+      <CreateFlashcardModal
+          isOpen={isFlashcardModalOpen}
+          onClose={() => setIsFlashcardModalOpen(false)}
+          documents={documents}
+          onCreate={handleCreateFlashcard}
+          isLoading={isGeneratingFlashcards}
+        />
 
       {/* Dialog & Toast */}
       {createOpen && (
@@ -2819,6 +2877,7 @@ function ProfilePage({
   onReload,
   onProfileUpdated,
   onEditUsername,
+  onEditPassword,
   onBack,
   onLogout,
   onEditProfile,
@@ -2877,17 +2936,32 @@ function ProfilePage({
           profile && (
             <>
               <div className="profile-avatar">
-                <div className="profile-avatar-img">
-                  <Avatar src={avatarPreview || profile.avatarUrl} size={80} />
+                <div className="profile-avatar-wrapper">
+                  
+                  <div className="profile-avatar-img">
+                    <Avatar src={avatarPreview || profile.avatarUrl} size={80} />
+                  </div>
+                  
+                  {/* 2. Tombol badge ikon pensil */}
+                  <button
+                    type="button"
+                    className="edit-avatar-badge"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    aria-label="Ganti foto profil"
+                  >
+                    {uploading ? (
+                      <span style={{ fontSize: '10px' }}>...</span>
+                    ) : (
+                      // Ikon pensil SVG sederhana
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                      </svg>
+                    )}
+                  </button>
+
                 </div>
-                <button
-                  type="button"
-                  className="link"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                >
-                  {uploading ? "Mengunggah..." : "Ganti foto"}
-                </button>
+
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -2895,8 +2969,9 @@ function ProfilePage({
                   hidden
                   onChange={handleAvatarChange}
                 />
+                
                 {avatarError && (
-                  <p className="msg-error" role="alert">{avatarError}</p>
+                  <p className="msg-error" role="alert" style={{ marginTop: '8px' }}>{avatarError}</p>
                 )}
               </div>
 
@@ -2928,6 +3003,20 @@ function ProfilePage({
                   aria-readonly="true"
                 />
               </Field>
+              <div className="field">
+                <span className="field-label" id="profile-password-label">Password</span>
+                <button
+                  type="button"
+                  className="input input--button"
+                  aria-labelledby="profile-password-label profile-password-value"
+                  onClick={onEditPassword}
+                >
+                  <span id="profile-password-value" className="input-button-value">
+                    ••••••••
+                  </span>
+                  <ChevronRightIcon />
+                </button>
+              </div>
             </>
           )
         )}
@@ -3009,6 +3098,133 @@ function EditUsernamePage({ accessToken, profile, notify, onSaved, onCancel }) {
         </Field>
 
         <button className="btn edit-username-save" type="submit" disabled={saving}>
+          {saving ? "Memproses..." : "Simpan"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function EditPasswordPage({ accessToken, notify, onSaved, onCancel }) {
+  const [passwordLama, setPasswordLama] = useState("");
+  const [passwordBaru, setPasswordBaru] = useState("");
+  const [konfirmasiPassword, setKonfirmasiPassword] = useState("");
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (saving) return;
+
+    // Validasi client-side sesuai aturan API & field konfirmasi
+    const nextErrors = {};
+    if (!passwordLama || !passwordBaru || !konfirmasiPassword) {
+      if (!passwordLama) nextErrors.passwordLama = "Kolom password tidak boleh kosong";
+      if (!passwordBaru) nextErrors.passwordBaru = "Kolom password tidak boleh kosong";
+      if (!konfirmasiPassword) nextErrors.konfirmasiPassword = "Kolom password tidak boleh kosong";
+    } else if (passwordBaru.length < 8) {
+      nextErrors.passwordBaru = "Password minimal 8 karakter";
+    } else if (passwordBaru !== konfirmasiPassword) {
+      nextErrors.konfirmasiPassword = "Konfirmasi password tidak cocok";
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+
+    setSaving(true);
+    setErrors({});
+    try {
+      await updatePassword({ passwordLama, passwordBaru }, accessToken);
+      notify("Password berhasil diperbarui", "success");
+      onSaved(); // Kembali ke halaman profil setelah berhasil
+    } catch (err) {
+      const msg = errorToMessage(err);
+      // Arahkan error ke field yang relevan berdasarkan pesan dari API
+      if (msg.toLowerCase().includes("lama")) {
+        setErrors({ passwordLama: msg });
+      } else if (msg.toLowerCase().includes("minimal 8")) {
+        setErrors({ passwordBaru: msg });
+      } else {
+        setErrors({ konfirmasiPassword: msg });
+      }
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="edit-username-page">
+      {/* Header tetap sama persis dengan EditUsernamePage */}
+      <header className="topbar">
+        <button
+          type="button"
+          className="brand-link"
+          onClick={onCancel}
+          disabled={saving}
+          aria-label="Kembali ke profil"
+        >
+          <LogoIcon size={32} />
+          <span className="brand">SiberNoteLM</span>
+        </button>
+      </header>
+
+      <form className="edit-username-form" onSubmit={handleSubmit} noValidate>
+        <Field id="old-password" label="Password lama" error={errors.passwordLama}>
+          <TextInput
+            id="old-password"
+            name="passwordLama"
+            type="password"
+            autoComplete="current-password"
+            placeholder="Masukkan password lama"
+            value={passwordLama}
+            onChange={(e) => {
+              setPasswordLama(e.target.value);
+              setErrors((prev) => ({ ...prev, passwordLama: "" }));
+            }}
+            error={errors.passwordLama}
+            autoFocus
+          />
+        </Field>
+
+        <Field id="new-password" label="Password baru" error={errors.passwordBaru}>
+          <TextInput
+            id="new-password"
+            name="passwordBaru"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Masukkan password baru"
+            value={passwordBaru}
+            onChange={(e) => {
+              setPasswordBaru(e.target.value);
+              setErrors((prev) => ({ ...prev, passwordBaru: "" }));
+            }}
+            error={errors.passwordBaru}
+          />
+        </Field>
+
+        <Field id="confirm-password" label="Konfirmasi password baru" error={errors.konfirmasiPassword}>
+          <TextInput
+            id="confirm-password"
+            name="konfirmasiPassword"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Ulangi password baru"
+            value={konfirmasiPassword}
+            onChange={(e) => {
+              setKonfirmasiPassword(e.target.value);
+              setErrors((prev) => ({ ...prev, konfirmasiPassword: "" }));
+            }}
+            error={errors.konfirmasiPassword}
+          />
+        </Field>
+
+        <button
+          className="btn edit-username-save"
+          type="submit"
+          disabled={saving}
+          style={{ marginTop: "32px" }}
+        >
           {saving ? "Memproses..." : "Simpan"}
         </button>
       </form>
@@ -3113,7 +3329,7 @@ export default function App() {
     if (!accessToken) return;
     if (view === "workspace" && activeNotebook) {
       saveLastView("workspace", { _id: activeNotebook._id, title: activeNotebook.title });
-    } else if (view === "profile" || view === "edit-username") {
+    } else if (view === "profile" || view === "edit-username" || view === "edit-password") {
       saveLastView("profile");
     } else if (view === "dashboard") {
       saveLastView("dashboard");
@@ -3159,6 +3375,17 @@ export default function App() {
   }
 
   function renderView() {
+    if (view === "edit-password" && accessToken && profile) {
+      return (
+        <EditPasswordPage
+          accessToken={accessToken}
+          notify={notify}
+          onSaved={() => setView("profile")}
+          onCancel={() => setView("profile")}
+        />
+      );
+    }
+
     if (view === "edit-username" && accessToken && profile) {
       return (
         <EditUsernamePage
@@ -3171,7 +3398,7 @@ export default function App() {
       );
     }
 
-    if ((view === "profile" || view === "edit-username") && accessToken) {
+    if ((view === "profile" || view === "edit-username" || view === "edit-password") && accessToken) {
       return (
         <ProfilePage
           accessToken={accessToken}
@@ -3182,6 +3409,7 @@ export default function App() {
           onReload={reloadProfile}
           onProfileUpdated={setProfile}
           onEditUsername={() => setView("edit-username")}
+          onEditPassword={() => setView("edit-password")}
           onBack={handleBackToDashboard}
           onLogout={handleLogout}
           onEditProfile={handleEditProfile}

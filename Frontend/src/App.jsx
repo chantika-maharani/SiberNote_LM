@@ -25,7 +25,7 @@ import {
   getChapters,
   getChapterSummary,
   generateFlashcards,
-  updatePassword
+  updatePassword,
 } from "./api";
 import CreateFlashcardModal from './flashcard_modal';
 import FlashcardPlayer from './flashcarduser';

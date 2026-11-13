@@ -158,6 +158,15 @@ export function updateProfile({ username, avatar }, accessToken) {
   return request("/user", { method: "PUT", body: form, accessToken });
 }
 
+/** PUT /user/password -> ubah password user yang sedang login. */
+export function updatePassword({ passwordLama, passwordBaru }, accessToken) {
+  return request("/user/password", {
+    method: "PUT",
+    body: { oldPassword: passwordLama, newPassword: passwordBaru },
+    accessToken,
+  });
+}
+
 // ---------- Notebooks ----------
 
 export function createNotebook({ title, description }, accessToken) {

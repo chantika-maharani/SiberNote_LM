@@ -6,6 +6,10 @@ import { generateEmbeddings } from "./embedding.js"
 import { processPageTexts } from "./ocr.js"
 
 const MAX_CHARS_PER_CHUNK = 3000
+const MAX_CHARS_PER_CHUNK_DOCX = 6000
+// Batas atas teks DOCX yang boleh dikirim sebagai satu chunk tunggal ke Gemini
+// (~15.000 karakter ≈ ~4.000 token — masih aman untuk model Gemini Flash)
+const MAX_SINGLE_CHUNK_DOCX = 15_000
 const MIN_OCR_CHARS = 30
 
 // ─── custom errors ────────────────────────────────────────────────────────────
@@ -37,16 +41,16 @@ export interface RawChunk {
     embedding: number[]
 }
 
-const splitBySize = (text: string): string[] => {
+const splitBySize = (text: string, maxChars = MAX_CHARS_PER_CHUNK): string[] => {
     const parts: string[] = []
     let start = 0
 
     while (start < text.length) {
-        let end = start + MAX_CHARS_PER_CHUNK
+        let end = start + maxChars
 
         if (end < text.length) {
             while (end > start && text[end] !== " ") end--
-            if (end === start) end = start + MAX_CHARS_PER_CHUNK
+            if (end === start) end = start + maxChars
         }
 
         const part = text.slice(start, end).trim()
@@ -273,16 +277,22 @@ export const chunkDOCX = async (
         ).length
 
         // kumpulkan semua teks dari node-node top-level (paragraph, heading, table, dll.)
+        // filter minimal 3 karakter saja — heading pendek seperti "1. Pendahuluan" tetap masuk
         const textParts: string[] = []
         for (const node of ast.content) {
             const text = extractTextFromNode(node, attachmentsByName).trim()
-            if (text.length >= 20) textParts.push(text)
+            if (text.length >= 3) textParts.push(text)
         }
 
         const fullText = textParts.join("\n\n").trim()
         if (!fullText) throw new NoTextError()
 
-        const parts = splitBySize(fullText)
+        // Kalau total teks muat dalam satu chunk, jangan dipecah —
+        // memotong di tengah konten membuat Gemini kehilangan konteks heading bab
+        const chunkSize = fullText.length <= MAX_SINGLE_CHUNK_DOCX
+            ? fullText.length  // satu chunk utuh
+            : MAX_CHARS_PER_CHUNK_DOCX
+        const parts = splitBySize(fullText, chunkSize)
         const chunks: RawChunk[] = parts
             .filter((part) => part.length >= 20)
             .map((content, i) => ({

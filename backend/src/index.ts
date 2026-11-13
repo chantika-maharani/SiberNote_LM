@@ -20,9 +20,9 @@ app.use(express.json())
 app.use(cors())
 await connectDB()
 
-if (!fs.existsSync(envVariable.UPLOADS_DIR)) {
-    fs.mkdirSync(envVariable.UPLOADS_DIR, { recursive: true })
-}
+// if (!fs.existsSync(envVariable.UPLOADS_DIR)) {
+//     fs.mkdirSync(envVariable.UPLOADS_DIR, { recursive: true })
+// }
 
 app.use("/uploads", express.static(path.resolve(envVariable.UPLOADS_DIR)))
 

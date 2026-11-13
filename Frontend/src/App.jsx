@@ -25,6 +25,7 @@ import {
   getChapters,
   getChapterSummary,
   generateFlashcards,
+  updatePassword
 } from "./api";
 import CreateFlashcardModal from './flashcard_modal';
 import FlashcardPlayer from './flashcarduser';
@@ -1592,13 +1593,13 @@ function FileIcon({ type = "" }) {
           <path
             d="M10 30V90H70"
             stroke="#E53935"
-            strokeWidth="8"
+            strokeWidth="4"
             strokeLinecap="square"
           />
           <path
             d="M30 10H90V70"
             stroke="#E53935"
-            strokeWidth="8"
+            strokeWidth="4"
             strokeLinecap="square"
           />
           {/* Teks PDF */}
@@ -1607,8 +1608,8 @@ function FileIcon({ type = "" }) {
             y="57"
             textAnchor="middle"
             fill="#E53935"
-            fontSize="26"
-            fontWeight="800"
+            fontSize="24"
+            fontWeight="600"
             fontFamily="sans-serif"
           >
             PDF
@@ -1631,7 +1632,7 @@ function FileIcon({ type = "" }) {
           <path
             d="M15 10H68L85 27V90H15V10Z"
             stroke="#2B579A"
-            strokeWidth="8"
+            strokeWidth="4"
             strokeLinejoin="round"
           />
           {/* Teks DOCX */}
@@ -1640,8 +1641,8 @@ function FileIcon({ type = "" }) {
             y="58"
             textAnchor="middle"
             fill="#2B579A"
-            fontSize="21"
-            fontWeight="800"
+            fontSize="19"
+            fontWeight="600"
             fontFamily="sans-serif"
           >
             DOCX
@@ -1667,13 +1668,13 @@ function FileIcon({ type = "" }) {
             width="76"
             height="56"
             stroke="#E06B43"
-            strokeWidth="8"
+            strokeWidth="4"
             fill="none"
           />
           <path
             d="M50 68V80M28 88H72"
             stroke="#E06B43"
-            strokeWidth="8"
+            strokeWidth="4"
             strokeLinecap="square"
           />
           {/* Teks PPTX */}
@@ -1682,8 +1683,8 @@ function FileIcon({ type = "" }) {
             y="49"
             textAnchor="middle"
             fill="#E06B43"
-            fontSize="21"
-            fontWeight="800"
+            fontSize="19"
+            fontWeight="600"
             fontFamily="sans-serif"
           >
             PPTX
@@ -1709,7 +1710,7 @@ function FileIcon({ type = "" }) {
             width="76"
             height="76"
             stroke="currentColor"
-            strokeWidth="8"
+            strokeWidth="4"
             fill="none"
           />
           <line
@@ -1734,8 +1735,8 @@ function FileIcon({ type = "" }) {
             y="57"
             textAnchor="middle"
             fill="currentColor"
-            fontSize="24"
-            fontWeight="800"
+            fontSize="22"
+            fontWeight="600"
             fontFamily="sans-serif"
           >
             TXT
@@ -2876,6 +2877,7 @@ function ProfilePage({
   onReload,
   onProfileUpdated,
   onEditUsername,
+  onEditPassword,
   onBack,
   onLogout,
   onEditProfile,
@@ -2934,17 +2936,32 @@ function ProfilePage({
           profile && (
             <>
               <div className="profile-avatar">
-                <div className="profile-avatar-img">
-                  <Avatar src={avatarPreview || profile.avatarUrl} size={80} />
+                <div className="profile-avatar-wrapper">
+                  
+                  <div className="profile-avatar-img">
+                    <Avatar src={avatarPreview || profile.avatarUrl} size={80} />
+                  </div>
+                  
+                  {/* 2. Tombol badge ikon pensil */}
+                  <button
+                    type="button"
+                    className="edit-avatar-badge"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    aria-label="Ganti foto profil"
+                  >
+                    {uploading ? (
+                      <span style={{ fontSize: '10px' }}>...</span>
+                    ) : (
+                      // Ikon pensil SVG sederhana
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                      </svg>
+                    )}
+                  </button>
+
                 </div>
-                <button
-                  type="button"
-                  className="link"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                >
-                  {uploading ? "Mengunggah..." : "Ganti foto"}
-                </button>
+
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -2952,8 +2969,9 @@ function ProfilePage({
                   hidden
                   onChange={handleAvatarChange}
                 />
+                
                 {avatarError && (
-                  <p className="msg-error" role="alert">{avatarError}</p>
+                  <p className="msg-error" role="alert" style={{ marginTop: '8px' }}>{avatarError}</p>
                 )}
               </div>
 
@@ -2985,6 +3003,20 @@ function ProfilePage({
                   aria-readonly="true"
                 />
               </Field>
+              <div className="field">
+                <span className="field-label" id="profile-password-label">Password</span>
+                <button
+                  type="button"
+                  className="input input--button"
+                  aria-labelledby="profile-password-label profile-password-value"
+                  onClick={onEditPassword}
+                >
+                  <span id="profile-password-value" className="input-button-value">
+                    ••••••••
+                  </span>
+                  <ChevronRightIcon />
+                </button>
+              </div>
             </>
           )
         )}
@@ -3072,6 +3104,7 @@ function EditUsernamePage({ accessToken, profile, notify, onSaved, onCancel }) {
     </div>
   );
 }
+
 
 /* ---------- Pemulihan sesi saat halaman di-refresh ---------- */
 
@@ -3170,7 +3203,7 @@ export default function App() {
     if (!accessToken) return;
     if (view === "workspace" && activeNotebook) {
       saveLastView("workspace", { _id: activeNotebook._id, title: activeNotebook.title });
-    } else if (view === "profile" || view === "edit-username") {
+    } else if (view === "profile" || view === "edit-username" || view === "edit-password") {
       saveLastView("profile");
     } else if (view === "dashboard") {
       saveLastView("dashboard");
@@ -3216,6 +3249,17 @@ export default function App() {
   }
 
   function renderView() {
+    if (view === "edit-password" && accessToken && profile) {
+      return (
+        <EditPasswordPage
+          accessToken={accessToken}
+          notify={notify}
+          onSaved={() => setView("profile")}
+          onCancel={() => setView("profile")}
+        />
+      );
+    }
+
     if (view === "edit-username" && accessToken && profile) {
       return (
         <EditUsernamePage
@@ -3228,7 +3272,7 @@ export default function App() {
       );
     }
 
-    if ((view === "profile" || view === "edit-username") && accessToken) {
+    if ((view === "profile" || view === "edit-username" || view === "edit-password") && accessToken) {
       return (
         <ProfilePage
           accessToken={accessToken}
@@ -3239,6 +3283,7 @@ export default function App() {
           onReload={reloadProfile}
           onProfileUpdated={setProfile}
           onEditUsername={() => setView("edit-username")}
+          onEditPassword={() => setView("edit-password")}
           onBack={handleBackToDashboard}
           onLogout={handleLogout}
           onEditProfile={handleEditProfile}

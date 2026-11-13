@@ -17,6 +17,194 @@ function FlashcardSpinner() {
 
 const FLASHCARD_OPTIONS = [3, 5, 7, 10];
 
+function FileIcon({ type = "" }) {
+  const fileType = String(type).toLowerCase();
+
+  switch (fileType) {
+    case "pdf":
+      return (
+        <svg
+          className="file-icon"
+          viewBox="0 0 100 100"
+          width="30"
+          height="30"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          {/* Frame Sudut Kiri Bawah & Kanan Atas */}
+          <path
+            d="M10 30V90H70"
+            stroke="#E53935"
+            strokeWidth="4"
+            strokeLinecap="square"
+          />
+          <path
+            d="M30 10H90V70"
+            stroke="#E53935"
+            strokeWidth="4"
+            strokeLinecap="square"
+          />
+          {/* Teks PDF */}
+          <text
+            x="50"
+            y="57"
+            textAnchor="middle"
+            fill="#E53935"
+            fontSize="22"
+            fontWeight="600"
+            fontFamily="sans-serif"
+          >
+            PDF
+          </text>
+        </svg>
+      );
+
+    case "docx":
+      return (
+        <svg
+          className="file-icon"
+          viewBox="0 0 100 100"
+          width="30"
+          height="30"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          {/* Dokumen dengan Lipatan Kanan Atas */}
+          <path
+            d="M15 10H68L85 27V90H15V10Z"
+            stroke="#2B579A"
+            strokeWidth="4"
+            strokeLinejoin="round"
+          />
+          {/* Teks DOCX */}
+          <text
+            x="50"
+            y="58"
+            textAnchor="middle"
+            fill="#2B579A"
+            fontSize="19"
+            fontWeight="600"
+            fontFamily="sans-serif"
+          >
+            DOCX
+          </text>
+        </svg>
+      );
+
+    case "pptx":
+      return (
+        <svg
+          className="file-icon"
+          viewBox="0 0 100 100"
+          width="30"
+          height="30"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          {/* Layar Presentasi / Stand */}
+          <rect
+            x="12"
+            y="12"
+            width="76"
+            height="56"
+            stroke="#E06B43"
+            strokeWidth="4"
+            fill="none"
+          />
+          <path
+            d="M50 68V80M28 88H72"
+            stroke="#E06B43"
+            strokeWidth="4"
+            strokeLinecap="square"
+          />
+          {/* Teks PPTX */}
+          <text
+            x="50"
+            y="49"
+            textAnchor="middle"
+            fill="#E06B43"
+            fontSize="19"
+            fontWeight="600"
+            fontFamily="sans-serif"
+          >
+            PPTX
+          </text>
+        </svg>
+      );
+
+    case "txt":
+      return (
+        <svg
+          className="file-icon"
+          viewBox="0 0 100 100"
+          width="30"
+          height="30"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          {/* Bingkai Kotak Hitam & Garis Atas-Bawah */}
+          <rect
+            x="12"
+            y="12"
+            width="76"
+            height="76"
+            stroke="currentColor"
+            strokeWidth="4"
+            fill="none"
+          />
+          <line
+            x1="20"
+            y1="26"
+            x2="80"
+            y2="26"
+            stroke="currentColor"
+            strokeWidth="3"
+          />
+          <line
+            x1="20"
+            y1="74"
+            x2="80"
+            y2="74"
+            stroke="currentColor"
+            strokeWidth="3"
+          />
+          {/* Teks TXT */}
+          <text
+            x="50"
+            y="57"
+            textAnchor="middle"
+            fill="currentColor"
+            fontSize="21"
+            fontWeight="600"
+            fontFamily="sans-serif"
+          >
+            TXT
+          </text>
+        </svg>
+      );
+
+    default:
+      return (
+        <svg
+          className="file-icon"
+          viewBox="0 0 100 100"
+          width="24"
+          height="24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="8"
+          aria-hidden="true"
+        >
+          <rect x="15" y="10" width="70" height="80" rx="4" />
+        </svg>
+      );
+  }
+}
+
 export default function CreateFlashcardModal({ isOpen, onClose, documents, onCreate, isLoading }) {
   const [selectedDocs, setSelectedDocs] = useState([]);
   const [numCards, setNumCards] = useState(5);
@@ -75,6 +263,14 @@ export default function CreateFlashcardModal({ isOpen, onClose, documents, onCre
     );
     }
 
+    function SegitigaBawah() {
+  return (
+    <svg width="17" height="14" viewBox="0 0 20 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 17L0 0L20 0L10 17Z" fill="#CECECE"/>
+    </svg>
+  );
+}
+
   return (
     <div className="flashcard-modal-overlay">
       <div className="flashcard-modal">
@@ -101,9 +297,7 @@ export default function CreateFlashcardModal({ isOpen, onClose, documents, onCre
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               >
                 <span>{numCards}</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
+                <SegitigaBawah />
               </div>
               
               {isDropdownOpen && (
@@ -131,20 +325,32 @@ export default function CreateFlashcardModal({ isOpen, onClose, documents, onCre
 
             <div className="source-section">
               <label>pilih sumber</label>
-              <div className="source-list">
+              <div className="source-list-flash">
                 {documents.map((doc) => {
                   const isChecked = selectedDocs.includes(doc._id || doc.id);
+                  const rawName = doc.title || doc.name || "";
+                    const displayName = rawName.length > 25 
+                      ? rawName.substring(0, 25) + "..." 
+                      : rawName;
                   return (
                     <label key={doc._id || doc.id} className="source-item">
                       <div className="source-item-left">
-                        <span className="pdf-icon-small">PDF</span>
-                        <span className="source-title">{doc.title || doc.name}</span>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <FileIcon type={doc.fileType || doc.type} />
+                        </div>
+                        <span className="source-title" title={rawName}>
+                          {displayName}
+                        </span>
                       </div>
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleDoc(doc._id || doc.id)}
-                      />
+                      <div className="custom-checkbox-container">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleDoc(doc._id || doc.id)}
+                            className="native-hidden-checkbox"
+                          />
+                          <span className="styled-checkbox"></span>
+                      </div>
                     </label>
                   );
                 })}

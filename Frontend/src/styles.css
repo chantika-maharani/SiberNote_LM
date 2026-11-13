@@ -2730,11 +2730,12 @@ chat-menu-btn:hover {
 
 /* Kiri: Dropdown Jumlah */
 .dropdown-section {
-  flex: 0 0 150px;
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  align-items: flex-start;
+  border-radius: 8px;
 }
 
 .dropdown-section label, .source-section label {
@@ -2754,35 +2755,33 @@ chat-menu-btn:hover {
   align-items: center;
   cursor: pointer;
   font-size: 0.95rem; */
-  background-color: #1e1e1e;
-  border: 1px solid #444;
+  background-color:transparent;
+  border: 1px solid #635252;
   border-radius: 8px;
-  padding: 10px 14px;
+  padding: 2px 9px;
   color: #fff;
   display: flex;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
+  gap: 15px;
 }
 
 .custom-options {
   position: absolute;
   top: 100%;
   left: 0;
-  right: 0;
-  margin-top: 4px;
-  background-color: #1e1e1e;
-  
+  margin-top: 8px;
+  background-color: #2b2b2b;
   border-radius: 8px;
   overflow: hidden;
   z-index: 10;
+  box-shadow: 3px 3px 0px 0px #1a1c1d;
 }
 
 .custom-option {
-  padding: 10px 12px;
-  text-align: center;
+  padding: 5px 21px;
   cursor: pointer;
-  transition: background 0.2s;
 }
 
 .custom-option:hover:not(.disabled) {
@@ -2790,21 +2789,25 @@ chat-menu-btn:hover {
 }
 
 .custom-option.disabled {
-  color: #555;
+  color: #8a8a8a;
   cursor: not-allowed;
 }
 
 /* Kanan: Daftar Sumber */
 .source-section {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
-.source-list {
-  border: 1px solid #444;
-  border-radius: 8px;
+.source-list-flash {
+  border: 2px solid #635252;
+  border-radius: 10px;
   padding: 8px;
-  max-height: 180px;
-  overflow-y: auto;
+  max-height: 300px;
+  overflow-y: hidden;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -2829,40 +2832,38 @@ chat-menu-btn:hover {
   gap: 12px;
 }
 
-.pdf-icon-small {
-  font-size: 0.6rem;
-  border: 1px solid #ff4a4a;
-  color: #ff4a4a;
-  padding: 2px 4px;
-  border-radius: 4px;
-  font-weight: bold;
-}
+/* .source-item-left .file-icon{
+  width: 36px;
+  height: 36px;
+} */
 
 .source-title {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: #cecece;
 }
 
 .error-text {
   display: block;
-  color: #ff6b6b;
+  color: #B81B1B;
   font-size: 0.8rem;
   margin-top: 8px;
 }
 
 /* Footer & Tombol Buat */
 .flashcard-modal-footer {
-  margin-top: 24px;
+  padding-top: 0;
+  margin-top: 0;
 }
 
 .btn-create-flashcard {
+  padding-top: 0;
   width: 100%;
-  padding: 12px;
-  border-radius: 8px;
+  padding: 2px;
+  border-radius: 10px;
   border: none;
   background-color: #e0e0e0;
   color: #1a1a1a;
-  font-size: 1rem;
+  font-size: 24px;
   font-weight: 500;
   cursor: pointer;
   transition: opacity 0.2s;
@@ -2914,7 +2915,6 @@ chat-menu-btn:hover {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 /* Header */
@@ -3041,4 +3041,113 @@ chat-menu-btn:hover {
   color: #8A8A8A;
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+/* =========================================
+   CUSTOM CHECKBOX (Sesuai Figma)
+   ========================================= */
+
+/* Kontainer pembungkus checkbox (12x12 mengikuti Rectangle 127) */
+.custom-checkbox-container {
+  position: relative;
+  width: 12px; 
+  height: 12px;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Sembunyikan checkbox bawaan React/Browser secara visual */
+.native-hidden-checkbox {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+/* Kotak buatan (Rectangle 127) */
+.styled-checkbox {
+  position: absolute;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  background-color: transparent; 
+  border: 2px solid #635252;
+  border-radius: 2px;
+  box-sizing: border-box;
+  transition: all 0.15s ease-in-out;
+}
+
+/* State: Saat dicentang (Tampil background #CECECE) */
+.native-hidden-checkbox:checked ~ .styled-checkbox {
+  background: #CECECE;
+}
+
+/* Membuat ikon centang (Menyesuaikan ruang Check 8x8px) */
+.styled-checkbox::after {
+  content: "";
+  position: absolute;
+  display: none;
+  /* Posisi disesuaikan agar pas di tengah kotak 12x12 */
+  top: 1.5px;
+  left: 3.5px;
+  width: 3px; 
+  height: 6px; 
+  border: solid #1a1a1a; /* Warna centang hitam gelap */
+  border-width: 0 1.5px 1.5px 0; /* Ketebalan garis centang yang lebih proporsional */
+  transform: rotate(45deg);
+}
+
+/* Munculkan ikon centang HANYA ketika checkbox dicentang */
+.native-hidden-checkbox:checked ~ .styled-checkbox::after {
+  display: block;
+}
+
+/* Container untuk menahan posisi absolut ikon pensil */
+.profile-avatar-wrapper {
+  position: relative;
+  display: inline-block;
+  /* Menambahkan border putih/abu terang di sekeliling avatar seperti pada desain */
+  border-radius: 50%;
+  border: 2px solid #e0e0e0; 
+}
+
+/* Badge ikon pensil di pojok kanan bawah */
+.edit-avatar-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 26px;
+  height: 26px;
+  background-color: #2b2b2b; /* Warna latar belakang gelap */
+  color: #e0e0e0;
+  border: 1px solid #1a1a1a;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  padding: 0;
+  transition: background-color 0.2s;
+}
+
+.edit-avatar-badge:hover {
+  background-color: #3f3f3f;
+}
+
+.edit-avatar-badge:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Memastikan Avatar tidak memiliki border atau margin bawaan yang merusak lingkaran */
+.profile-avatar-img {
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
 }

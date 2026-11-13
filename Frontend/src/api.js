@@ -158,6 +158,14 @@ export function updateProfile({ username, avatar }, accessToken) {
   return request("/user", { method: "PUT", body: form, accessToken });
 }
 
+export function updatePassword({ passwordLama, passwordBaru }, accessToken) {
+  return request("/user/password", {
+    method: "PUT",
+    body: { passwordLama, passwordBaru },
+    accessToken,
+  });
+}
+
 // ---------- Notebooks ----------
 
 export function createNotebook({ title, description }, accessToken) {
